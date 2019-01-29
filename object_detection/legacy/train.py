@@ -43,7 +43,20 @@ Example usage:
 
 import functools
 import json
+
 import os
+os.environ["CUDA_VISIBLE_DEVICES"] = "1"
+
+def tf_growable_memory():
+    """Needs to be run at the beginning of your code"""
+    import tensorflow as tf
+    from keras.backend.tensorflow_backend import set_session
+    config = tf.ConfigProto()
+    config.gpu_options.allow_growth = True
+    set_session(tf.Session(config=config))
+
+tf_growable_memory()
+
 import tensorflow as tf
 
 from object_detection.builders import dataset_builder

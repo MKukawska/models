@@ -202,10 +202,6 @@ def create_model_fn(detection_model_fn, configs, hparams, use_tpu=False):
     params = params or {}
     total_loss, train_op, detections, export_outputs = None, None, None, None
     is_training = mode == tf.estimator.ModeKeys.TRAIN
-
-    # Make sure to set the Keras learning phase. True during training,
-    # False for inference.
-    tf.keras.backend.set_learning_phase(is_training)
     detection_model = detection_model_fn(is_training=is_training,
                                          add_summaries=(not use_tpu))
     scaffold_fn = None
@@ -234,9 +230,6 @@ def create_model_fn(detection_model_fn, configs, hparams, use_tpu=False):
       gt_keypoints_list = None
       if fields.InputDataFields.groundtruth_keypoints in labels:
         gt_keypoints_list = labels[fields.InputDataFields.groundtruth_keypoints]
-      gt_weights_list = None
-      if fields.InputDataFields.groundtruth_weights in labels:
-        gt_weights_list = labels[fields.InputDataFields.groundtruth_weights]
       if fields.InputDataFields.groundtruth_is_crowd in labels:
         gt_is_crowd_list = labels[fields.InputDataFields.groundtruth_is_crowd]
       detection_model.provide_groundtruth(
@@ -244,7 +237,8 @@ def create_model_fn(detection_model_fn, configs, hparams, use_tpu=False):
           groundtruth_classes_list=gt_classes_list,
           groundtruth_masks_list=gt_masks_list,
           groundtruth_keypoints_list=gt_keypoints_list,
-          groundtruth_weights_list=gt_weights_list,
+          groundtruth_weights_list=labels[
+              fields.InputDataFields.groundtruth_weights],
           groundtruth_is_crowd_list=gt_is_crowd_list)
 
     preprocessed_images = features[fields.InputDataFields.image]
@@ -315,16 +309,10 @@ def create_model_fn(detection_model_fn, configs, hparams, use_tpu=False):
 
       # Optionally freeze some layers by setting their gradients to be zero.
       trainable_variables = None
-      include_variables = (
-          train_config.update_trainable_variables
-          if train_config.update_trainable_variables else None)
-      exclude_variables = (
-          train_config.freeze_variables
-          if train_config.freeze_variables else None)
-      trainable_variables = tf.contrib.framework.filter_variables(
-          tf.trainable_variables(),
-          include_patterns=include_variables,
-          exclude_patterns=exclude_variables)
+      if train_config.freeze_variables:
+        trainable_variables = tf.contrib.framework.filter_variables(
+            tf.trainable_variables(),
+            exclude_patterns=train_config.freeze_variables)
 
       clip_gradients_value = None
       if train_config.gradient_clipping_by_norm > 0:
@@ -378,17 +366,21 @@ def create_model_fn(detection_model_fn, configs, hparams, use_tpu=False):
       if not use_tpu and use_original_images:
         detection_and_groundtruth = (
             vis_utils.draw_side_by_side_evaluation_image(
-                eval_dict, category_index, max_boxes_to_draw=eval_config.max_num_boxes_to_visualize,
-                min_score_thresh=eval_config.min_score_threshold,
+                eval_dict, category_index, max_boxes_to_draw=20,
+                min_score_thresh=0.2,
                 use_normalized_coordinates=False))
         img_summary = tf.summary.image('Detections_Left_Groundtruth_Right',
                                        detection_and_groundtruth)
 
       # Eval metrics on a single example.
+      eval_metrics = eval_config.metrics_set
+      if not eval_metrics:
+        eval_metrics = ['coco_detection_metrics']
       eval_metric_ops = eval_util.get_eval_metric_ops_for_evaluators(
-          eval_config,
+          eval_metrics,
           category_index.values(),
-          eval_dict)
+          eval_dict,
+          include_metrics_per_category=eval_config.include_metrics_per_category)
       for loss_key, loss_tensor in iter(losses_dict.items()):
         eval_metric_ops[loss_key] = tf.metrics.mean(loss_tensor)
       for var in optimizer_summary_vars:
@@ -396,7 +388,7 @@ def create_model_fn(detection_model_fn, configs, hparams, use_tpu=False):
       if img_summary is not None:
         eval_metric_ops['Detections_Left_Groundtruth_Right'] = (
             img_summary, tf.no_op())
-      eval_metric_ops = {str(k): v for k, v in eval_metric_ops.items()}
+      eval_metric_ops = {str(k): v for k, v in eval_metric_ops.iteritems()}
 
       if eval_config.use_moving_averages:
         variable_averages = tf.train.ExponentialMovingAverage(0.0)

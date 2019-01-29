@@ -258,18 +258,12 @@ class CocoEvaluationPyFuncTest(tf.test.TestCase):
     detection_scores = tf.placeholder(tf.float32, shape=(None))
     detection_classes = tf.placeholder(tf.float32, shape=(None))
 
-    input_data_fields = standard_fields.InputDataFields
-    detection_fields = standard_fields.DetectionResultFields
-    eval_dict = {
-        input_data_fields.key: image_id,
-        input_data_fields.groundtruth_boxes: groundtruth_boxes,
-        input_data_fields.groundtruth_classes: groundtruth_classes,
-        detection_fields.detection_boxes: detection_boxes,
-        detection_fields.detection_scores: detection_scores,
-        detection_fields.detection_classes: detection_classes
-    }
-
-    eval_metric_ops = coco_evaluator.get_estimator_eval_metric_ops(eval_dict)
+    eval_metric_ops = coco_evaluator.get_estimator_eval_metric_ops(
+        image_id, groundtruth_boxes,
+        groundtruth_classes,
+        detection_boxes,
+        detection_scores,
+        detection_classes)
 
     _, update_op = eval_metric_ops['DetectionBoxes_Precision/mAP']
 
@@ -342,18 +336,9 @@ class CocoEvaluationPyFuncTest(tf.test.TestCase):
     detection_scores = tf.placeholder(tf.float32, shape=(None))
     detection_classes = tf.placeholder(tf.float32, shape=(None))
 
-    input_data_fields = standard_fields.InputDataFields
-    detection_fields = standard_fields.DetectionResultFields
-    eval_dict = {
-        input_data_fields.key: image_id,
-        input_data_fields.groundtruth_boxes: groundtruth_boxes,
-        input_data_fields.groundtruth_classes: groundtruth_classes,
-        detection_fields.detection_boxes: detection_boxes,
-        detection_fields.detection_scores: detection_scores,
-        detection_fields.detection_classes: detection_classes
-    }
-
-    eval_metric_ops = coco_evaluator.get_estimator_eval_metric_ops(eval_dict)
+    eval_metric_ops = coco_evaluator.get_estimator_eval_metric_ops(
+        image_id, groundtruth_boxes, groundtruth_classes, detection_boxes,
+        detection_scores, detection_classes)
 
     _, update_op = eval_metric_ops['DetectionBoxes_Precision/mAP']
 
@@ -441,18 +426,12 @@ class CocoEvaluationPyFuncTest(tf.test.TestCase):
     detection_scores = tf.placeholder(tf.float32, shape=(batch_size, None))
     detection_classes = tf.placeholder(tf.float32, shape=(batch_size, None))
 
-    input_data_fields = standard_fields.InputDataFields
-    detection_fields = standard_fields.DetectionResultFields
-    eval_dict = {
-        input_data_fields.key: image_id,
-        input_data_fields.groundtruth_boxes: groundtruth_boxes,
-        input_data_fields.groundtruth_classes: groundtruth_classes,
-        detection_fields.detection_boxes: detection_boxes,
-        detection_fields.detection_scores: detection_scores,
-        detection_fields.detection_classes: detection_classes
-    }
-
-    eval_metric_ops = coco_evaluator.get_estimator_eval_metric_ops(eval_dict)
+    eval_metric_ops = coco_evaluator.get_estimator_eval_metric_ops(
+        image_id, groundtruth_boxes,
+        groundtruth_classes,
+        detection_boxes,
+        detection_scores,
+        detection_classes)
 
     _, update_op = eval_metric_ops['DetectionBoxes_Precision/mAP']
 
@@ -507,20 +486,14 @@ class CocoEvaluationPyFuncTest(tf.test.TestCase):
     detection_classes = tf.placeholder(tf.float32, shape=(batch_size, None))
     num_det_boxes_per_image = tf.placeholder(tf.int32, shape=(None))
 
-    input_data_fields = standard_fields.InputDataFields
-    detection_fields = standard_fields.DetectionResultFields
-    eval_dict = {
-        input_data_fields.key: image_id,
-        input_data_fields.groundtruth_boxes: groundtruth_boxes,
-        input_data_fields.groundtruth_classes: groundtruth_classes,
-        detection_fields.detection_boxes: detection_boxes,
-        detection_fields.detection_scores: detection_scores,
-        detection_fields.detection_classes: detection_classes,
-        'num_groundtruth_boxes_per_image': num_gt_boxes_per_image,
-        'num_det_boxes_per_image': num_det_boxes_per_image
-    }
-
-    eval_metric_ops = coco_evaluator.get_estimator_eval_metric_ops(eval_dict)
+    eval_metric_ops = coco_evaluator.get_estimator_eval_metric_ops(
+        image_id, groundtruth_boxes,
+        groundtruth_classes,
+        detection_boxes,
+        detection_scores,
+        detection_classes,
+        num_gt_boxes_per_image=num_gt_boxes_per_image,
+        num_det_boxes_per_image=num_det_boxes_per_image)
 
     _, update_op = eval_metric_ops['DetectionBoxes_Precision/mAP']
 
@@ -669,19 +642,13 @@ class CocoMaskEvaluationPyFuncTest(tf.test.TestCase):
     detection_classes = tf.placeholder(tf.float32, shape=(None))
     detection_masks = tf.placeholder(tf.uint8, shape=(None, None, None))
 
-    input_data_fields = standard_fields.InputDataFields
-    detection_fields = standard_fields.DetectionResultFields
-    eval_dict = {
-        input_data_fields.key: image_id,
-        input_data_fields.groundtruth_boxes: groundtruth_boxes,
-        input_data_fields.groundtruth_classes: groundtruth_classes,
-        input_data_fields.groundtruth_instance_masks: groundtruth_masks,
-        detection_fields.detection_scores: detection_scores,
-        detection_fields.detection_classes: detection_classes,
-        detection_fields.detection_masks: detection_masks,
-    }
-
-    eval_metric_ops = coco_evaluator.get_estimator_eval_metric_ops(eval_dict)
+    eval_metric_ops = coco_evaluator.get_estimator_eval_metric_ops(
+        image_id, groundtruth_boxes,
+        groundtruth_classes,
+        groundtruth_masks,
+        detection_scores,
+        detection_classes,
+        detection_masks)
 
     _, update_op = eval_metric_ops['DetectionMasks_Precision/mAP']
 

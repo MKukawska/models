@@ -91,10 +91,13 @@ python export_inference_graph \
               } \
             }"
 """
-import tensorflow as tf
 from google.protobuf import text_format
 from object_detection import exporter
 from object_detection.protos import pipeline_pb2
+
+import os
+os.environ["CUDA_VISIBLE_DEVICES"] = "2"
+import tensorflow as tf
 
 slim = tf.contrib.slim
 flags = tf.app.flags
@@ -128,6 +131,17 @@ tf.app.flags.mark_flag_as_required('output_directory')
 FLAGS = flags.FLAGS
 
 
+def tf_growable_memory():
+    """Needs to be run at the beginning of your code"""
+    import tensorflow as tf
+    from keras.backend.tensorflow_backend import set_session
+    config = tf.ConfigProto()
+    config.gpu_options.allow_growth = True
+    set_session(tf.Session(config=config))
+
+tf_growable_memory()
+
+
 def main(_):
   pipeline_config = pipeline_pb2.TrainEvalPipelineConfig()
   with tf.gfile.GFile(FLAGS.pipeline_config_path, 'r') as f:
@@ -140,10 +154,10 @@ def main(_):
     ]
   else:
     input_shape = None
-  exporter.export_inference_graph(
-      FLAGS.input_type, pipeline_config, FLAGS.trained_checkpoint_prefix,
-      FLAGS.output_directory, input_shape=input_shape,
-      write_inference_graph=FLAGS.write_inference_graph)
+  exporter.export_inference_graph(FLAGS.input_type, pipeline_config,
+                                  FLAGS.trained_checkpoint_prefix,
+                                  FLAGS.output_directory, input_shape,
+                                  FLAGS.write_inference_graph)
 
 
 if __name__ == '__main__':
